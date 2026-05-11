@@ -1,19 +1,3 @@
-/*
-╔══════════════════════════════════════════════════════════╗
-║         SPARTALIST - BSU STUDENT COUNCIL VOTING          ║
-║      Data Structures Used:                               ║
-║        • Singly Linked List  → candidate storage         ║
-║        • Hash Map (unordered_map) → duplicate prevention ║
-╚══════════════════════════════════════════════════════════╝
-
-HOW TO CUSTOMIZE:
-  - POSITIONS    : Edit the POSITIONS vector
-  - PARTY LISTS  : Edit the PARTY_LISTS map
-  - SCHOOL NAME  : Edit SCHOOL_NAME
-  - RESULTS FILE : Edit RESULTS_FILENAME
-  - ADMIN PASS   : Edit ADMIN_PASSWORD
-*/
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -29,15 +13,10 @@ HOW TO CUSTOMIZE:
 
 using namespace std;
 
-// ─────────────────────────────────────────────
-//  EASY-ADJUST CONFIGURATION
-// ─────────────────────────────────────────────
-
 const string SCHOOL_NAME      = "Batangas State University TNEU '-' Alangilan Campus";
 const string RESULTS_FILENAME = "spartalist_results_2026.txt";
-const string ADMIN_PASSWORD   = "admin123";   // ← change as needed
+const string ADMIN_PASSWORD   = "admin123";
 
-// Positions available for voting
 const vector<string> POSITIONS = {
     "President",
     "Executive Vice President",
@@ -45,7 +24,6 @@ const vector<string> POSITIONS = {
     "VP For Student Development & Government - Balayan",
 };
 
-// Party lists: party → { position → candidate name }
 const map<string, map<string, string>> PARTY_LISTS = {
     {"Habinaya", {
         {"President",                                             "Angel Gionni S. Ornales"},
@@ -62,10 +40,9 @@ const map<string, map<string, string>> PARTY_LISTS = {
 };
 
 // ─────────────────────────────────────────────
-//  DATA STRUCTURES
+//  DATA STRUCTURES USED
 // ─────────────────────────────────────────────
 
-// Node in the singly linked list
 struct CandidateNode {
     string name;
     string party;
@@ -77,7 +54,6 @@ struct CandidateNode {
         : name(n), party(p), position(pos), votes(0), next(nullptr) {}
 };
 
-// Singly Linked List for one position
 class CandidateLinkedList {
 public:
     string position;
@@ -95,7 +71,6 @@ public:
         }
     }
 
-    // Append a new candidate node at the tail
     void append(const string& name, const string& party) {
         CandidateNode* newNode = new CandidateNode(name, party, position);
         if (!head) {
@@ -107,7 +82,6 @@ public:
         }
     }
 
-    // Traverse list to find a candidate by name (case-insensitive)
     CandidateNode* find(const string& name) const {
         string lower_name = name;
         transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
@@ -122,14 +96,12 @@ public:
         return nullptr;
     }
 
-    // Find and increment vote count
     bool addVote(const string& name) {
         CandidateNode* node = find(name);
         if (node) { node->votes++; return true; }
         return false;
     }
 
-    // Traverse to find node with highest votes
     CandidateNode* getWinner() const {
         CandidateNode* winner = nullptr;
         CandidateNode* cur    = head;
@@ -141,7 +113,6 @@ public:
         return winner;
     }
 
-    // Return all nodes as a vector
     vector<CandidateNode*> allCandidates() const {
         vector<CandidateNode*> result;
         CandidateNode* cur = head;
@@ -156,10 +127,8 @@ public:
 
 class VotingSystem {
 public:
-    // Hash Map: student_id → set of positions already voted for
     unordered_map<string, set<string>> voters;
 
-    // One linked list per position
     map<string, CandidateLinkedList*> ballots;
 
     VotingSystem()  { buildBallots(); }
@@ -175,8 +144,6 @@ public:
             }
         }
     }
-
-    // ── Voter Registration ──────────────────────
 
     bool registerVoter(const string& sid) {
         if (voters.count(sid)) return false;
@@ -194,7 +161,6 @@ public:
         return it->second.count(position) > 0;
     }
 
-    // ── Casting a Vote ──────────────────────────
 
     pair<bool, string> castVote(const string& sid, const string& position, const string& candidateName) {
         if (!voters.count(sid))
@@ -214,10 +180,9 @@ public:
         return {true, "Vote cast for " + candidateName + " (" + position + ")!"};
     }
 
-    // ── Results ─────────────────────────────────
 
     struct PositionResult {
-        vector<tuple<string, string, int>> candidates;   // name, party, votes
+        vector<tuple<string, string, int>> candidates;
         tuple<string, string, int>         winner;
         bool                               hasWinner;
     };
@@ -258,7 +223,6 @@ string toUpper(string s) {
 }
 
 bool isValidId(const string& sid) {
-    // Format: ##-##### (two digits, dash, five digits)
     regex pattern(R"(^\d{2}-\d{5}$)");
     return regex_match(sid, pattern);
 }
@@ -280,7 +244,6 @@ void clearScreen() {
 }
 
 void divider(char ch = 0xE2, int width = 58) {
-    // Use simple ASCII fallback for cross-platform safety
     string line(width, '-');
     if (ch == '=') line = string(width, '=');
     cout << "  " << line << "\n";
@@ -323,7 +286,6 @@ void showLiveResults() {
         const auto& data = results[pos];
         cout << "\n  [" << pos << "]\n";
 
-        // Sort candidates by votes descending
         auto sorted = data.candidates;
         sort(sorted.begin(), sorted.end(),
              [](const auto& a, const auto& b){ return get<2>(a) > get<2>(b); });
@@ -376,7 +338,6 @@ void showFinalResults() {
     cout << "\n  Total registered voters : " << vs->voters.size() << "\n";
     cout << "  Total votes cast        : " << vs->totalVotesCast() << "\n";
 
-    // Export to file
     ofstream f(RESULTS_FILENAME);
     if (f.is_open()) {
         f << "SPARTALIST -- " << SCHOOL_NAME << "\n";
@@ -405,7 +366,6 @@ void menuRegister() {
         cout << "  Enter Student ID (##-#####): ";
         string sid; getline(cin, sid);
 
-        // Trim whitespace
         sid.erase(0, sid.find_first_not_of(" \t\r\n"));
         sid.erase(sid.find_last_not_of(" \t\r\n") + 1);
 
